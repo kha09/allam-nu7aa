@@ -1,0 +1,48 @@
+/* Custom CSS Styles */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --background-color: #f8f9fa;
+  }
+  
+  .custom-shadow {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .rtl-layout {
+    direction: rtl;
+    text-align: right;
+  }
+  
+  .hover-effect {
+    transition: all 0.3s ease;
+  }
+  
+  .hover-effect:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .error-highlight {
+    background-color: rgba(255, 0, 0, 0.1);
+    border-bottom: 2px solid red;
+  }
+  
+  .synonym-button {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .synonym-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .margint{
+      margin-top: 100px;
+  }
+  
+  img{
+      width: 80px;
+  }

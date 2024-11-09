@@ -1,9 +1,17 @@
 'use client'
 
+
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { Copy, Wand2 } from 'lucide-react'
+import { Button } from "./ui/button"
+import { watsonApi, WatsonResponse, ErrorItem } from '@/lib/watson-api'
+import { ErrorDisplay } from './error-display'
+=======
 import React, { useState, useEffect, useRef } from 'react'
 import { Copy, Wand2, Check } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { watsonApi, WatsonResponse, ErrorItem } from "@/lib/watson-api"
+
 
 interface ErrorInfo {
   word: string;
@@ -18,9 +26,17 @@ interface ErrorInfo {
 interface TextEditorProps {
   onErrorsFound: (errors: WatsonResponse) => void;
   onSynonymsGenerated: (synonyms: string) => void;
+  onSelectedTextChange: (text: string) => void;
 }
 
-export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorProps) {
+export interface TextEditorRef {
+  handleCorrection: (errorWord: string, correction: string) => void;
+  handleCorrectAll: (corrections: Array<{ errorWord: string, correction: string }>) => void;
+  handleSynonymReplace: (synonym: string) => void;
+}
+
+export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
+  ({ onErrorsFound, onSynonymsGenerated, onSelectedTextChange }, ref) => {
   const [userInput, setUserInput] = useState("")
   const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -29,16 +45,80 @@ export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorPro
   const [selectedText, setSelectedText] = useState("")
   const [isSynonymLoading, setIsSynonymLoading] = useState(false)
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const editorRef = useRef<HTMLDivElement>(null)
 
+
+  const getErrorWord = (error: ErrorItem) => error["خطأ"] || error["الكلمة_الخاطئة"] || error["الكلمة الخاطئة"] || "";
+  const getErrorType = (error: ErrorItem) => error["نوع_الخطأ"] || error["نوع الخطأ"] || "";
+  const getErrorCorrection = (error: ErrorItem) => error["تصحيح_الكلمة"] || error["تصحيح الكلمة"] || "";
+=======
   const getErrorWord = (error: ErrorItem) => error["الكلمة_الخاطئة"] || "";
   const getErrorType = (error: ErrorItem) => error["نوع_الخطأ"] || "";
   const getErrorCorrection = (error: ErrorItem) => error["تصحيح_الكلمة"] || "";
+
+
+  const handleCorrection = (errorWord: string, correction: string) => {
+    if (editorRef.current) {
+      // Find the error span element
+      const errorSpan = editorRef.current.querySelector(`[data-word="${errorWord}"]`);
+      if (errorSpan) {
+        // Create a new text node with the correction
+        const textNode = document.createTextNode(correction);
+        // Replace the span with the text node
+        errorSpan.parentNode?.replaceChild(textNode, errorSpan);
+        // Update the userInput state with the new content
+        setUserInput(editorRef.current.textContent || '');
+      }
+    }
+  };
+
+  const handleCorrectAll = (corrections: Array<{ errorWord: string, correction: string }>) => {
+    if (editorRef.current) {
+      let content = editorRef.current.innerHTML;
+      corrections.forEach(({ errorWord, correction }) => {
+        const errorSpan = editorRef.current?.querySelector(`[data-word="${errorWord}"]`);
+        if (errorSpan) {
+          // Create a new text node with the correction
+          const textNode = document.createTextNode(correction);
+          // Replace the span with the text node
+          errorSpan.parentNode?.replaceChild(textNode, errorSpan);
+        }
+      });
+      // Update the userInput state with the new content
+      setUserInput(editorRef.current.textContent || '');
+    }
+  };
+
+  const handleSynonymReplace = (synonym: string) => {
+    if (editorRef.current && selectedText) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const textNode = document.createTextNode(synonym);
+        range.deleteContents();
+        range.insertNode(textNode);
+        // Update the userInput state with the new content
+        setUserInput(editorRef.current.textContent || '');
+        // Clear selection
+        setSelectedText('');
+        onSelectedTextChange('');
+      }
+    }
+  };
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    handleCorrection,
+    handleCorrectAll,
+    handleSynonymReplace
+  }));
 
   const handleTextSelection = () => {
     const selection = window.getSelection();
     if (selection) {
       const text = selection.toString().trim();
       setSelectedText(text);
+      onSelectedTextChange(text);
       console.log('Selected text:', text);
     }
   };
@@ -140,7 +220,7 @@ export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorPro
     
     if (word && errorType && correction) {
       const rect = target.getBoundingClientRect();
-      const editorRect = document.querySelector('.editor-container')?.getBoundingClientRect();
+      const editorRect = editorRef.current?.getBoundingClientRect();
       
       if (editorRect) {
         setErrorInfo({
@@ -163,6 +243,9 @@ export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorPro
   };
 
   useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
     const handleMouseEnter = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target.classList.contains('error-word')) {
@@ -212,6 +295,9 @@ export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorPro
       }
     };
 
+    editor.addEventListener('mouseover', handleMouseEnter);
+    editor.addEventListener('mouseout', handleMouseLeave);
+=======
     const handleCorrectButtonClick = (e: MouseEvent) => {
       const button = e.target as HTMLElement;
       const correctBtn = button.closest('.correct-btn');
@@ -228,6 +314,7 @@ export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorPro
     document.addEventListener('mouseout', handleMouseLeave);
     document.addEventListener('click', handleCorrectButtonClick);
 
+
     const tooltip = document.getElementById('error-tooltip');
     if (tooltip) {
       tooltip.addEventListener('mouseenter', handleTooltipMouseEnter);
@@ -235,9 +322,14 @@ export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorPro
     }
 
     return () => {
+
+      editor.removeEventListener('mouseover', handleMouseEnter);
+      editor.removeEventListener('mouseout', handleMouseLeave);
+=======
       document.removeEventListener('mouseover', handleMouseEnter);
       document.removeEventListener('mouseout', handleMouseLeave);
       document.removeEventListener('click', handleCorrectButtonClick);
+
       if (tooltip) {
         tooltip.removeEventListener('mouseenter', handleTooltipMouseEnter);
         tooltip.removeEventListener('mouseleave', handleTooltipMouseLeave);
@@ -260,9 +352,8 @@ export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorPro
       
       const displayText = markErrorsInText(userInput, errors);
       
-      const editorDiv = document.querySelector('[contenteditable]');
-      if (editorDiv) {
-        editorDiv.innerHTML = displayText;
+      if (editorRef.current) {
+        editorRef.current.innerHTML = displayText;
       }
     } catch (err) {
       console.error('Error in handleGenerateText:', err);
@@ -278,6 +369,7 @@ export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorPro
       </div>
       <div className="relative mb-4 editor-container">
         <div
+          ref={editorRef}
           contentEditable
           suppressContentEditableWarning
           spellCheck="false"
@@ -387,4 +479,6 @@ export function TextEditor({ onErrorsFound, onSynonymsGenerated }: TextEditorPro
       `}</style>
     </div>
   )
-}
+})
+
+TextEditor.displayName = 'TextEditor'

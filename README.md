@@ -25,7 +25,6 @@ Follow these steps to set up and run the project on your local environment:
    # or
    bun install
 
-
 4. **Run the Development Server**  
    Start the development server with one of the following commands:
 
@@ -39,13 +38,15 @@ Follow these steps to set up and run the project on your local environment:
    bun dev
 
 
+5. **View the Project**  
+
+
    
 5. **Modify the Environment File**  
    Follow these steps to update the [env.local](allam-nu7aa/env.local) file:
    1. Open the file.
    2. Add your `API KEY` and `PROJECT ID`.
    3. Rename the file to `.env.local`
-
 
 
 

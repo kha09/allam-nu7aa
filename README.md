@@ -43,5 +43,6 @@ Follow these steps to set up and run the project on your local environment:
    3. Change the file's name to `.env.local`
 
 
+
 6. **View the Project**  
    Open your browser and navigate to [http://localhost:3000](http://localhost:3000) to view the application. The server will automatically reload if you make edits to the code.

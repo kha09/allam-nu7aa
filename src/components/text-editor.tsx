@@ -1,10 +1,17 @@
 'use client'
 
+
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { Copy, Wand2 } from 'lucide-react'
 import { Button } from "./ui/button"
 import { watsonApi, WatsonResponse, ErrorItem } from '@/lib/watson-api'
 import { ErrorDisplay } from './error-display'
+=======
+import React, { useState, useEffect, useRef } from 'react'
+import { Copy, Wand2, Check } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { watsonApi, WatsonResponse, ErrorItem } from "@/lib/watson-api"
+
 
 interface ErrorInfo {
   word: string;
@@ -40,9 +47,15 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const editorRef = useRef<HTMLDivElement>(null)
 
+
   const getErrorWord = (error: ErrorItem) => error["خطأ"] || error["الكلمة_الخاطئة"] || error["الكلمة الخاطئة"] || "";
   const getErrorType = (error: ErrorItem) => error["نوع_الخطأ"] || error["نوع الخطأ"] || "";
   const getErrorCorrection = (error: ErrorItem) => error["تصحيح_الكلمة"] || error["تصحيح الكلمة"] || "";
+=======
+  const getErrorWord = (error: ErrorItem) => error["الكلمة_الخاطئة"] || "";
+  const getErrorType = (error: ErrorItem) => error["نوع_الخطأ"] || "";
+  const getErrorCorrection = (error: ErrorItem) => error["تصحيح_الكلمة"] || "";
+
 
   const handleCorrection = (errorWord: string, correction: string) => {
     if (editorRef.current) {
@@ -133,15 +146,30 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
     }
   };
 
+  const handleCorrectWord = (errorWord: string, correction: string) => {
+    const editorDiv = document.querySelector('[contenteditable]');
+    if (editorDiv) {
+      const newHtml = editorDiv.innerHTML.replace(
+        new RegExp(`<span[^>]*data-word="${errorWord}"[^>]*>${errorWord}</span>`),
+        correction
+      );
+      editorDiv.innerHTML = newHtml;
+      setUserInput(editorDiv.textContent || '');
+      
+      // Update current errors by removing the corrected error
+      const updatedErrors = currentErrors.filter(err => getErrorWord(err) !== errorWord);
+      setCurrentErrors(updatedErrors);
+      onErrorsFound(updatedErrors);
+    }
+  };
+
   const markErrorsInText = (text: string, errors: ErrorItem[]) => {
     console.log('Marking errors in text:', { text, errors });
 
-    // Create a temporary div to handle HTML safely
     const tempDiv = document.createElement('div');
     tempDiv.textContent = text;
     let processedText = tempDiv.innerHTML;
 
-    // Sort errors by length (longest first) to prevent partial word matches
     const sortedErrors = [...errors].sort((a, b) => {
       const wordA = getErrorWord(a);
       const wordB = getErrorWord(b);
@@ -153,16 +181,27 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
       const errorType = getErrorType(errorItem);
       const correction = getErrorCorrection(errorItem);
 
-      // Use word boundaries and capture spaces/punctuation
       const regex = new RegExp(`(^|\\s|[.،؛:-])(${errorWord})($|\\s|[.،؛:-])`, 'g');
       processedText = processedText.replace(regex, (match, before, word, after) => {
         return `${before}<span 
-          class="error-word" 
-          style="text-decoration: underline; text-decoration-color: red; text-decoration-thickness: 2px; position: relative; display: inline-block;"
+          class="error-word relative" 
+          style="text-decoration: underline; text-decoration-color: red; text-decoration-thickness: 2px; display: inline-block;"
           data-error-type="${errorType}"
           data-word="${errorWord}"
           data-correction="${correction}"
-        >${word}</span>${after}`;
+        >
+          <button 
+            class="correct-btn absolute -left-6 top-1/2 -translate-y-1/2 bg-green-500 hover:bg-green-600 rounded-full p-1 opacity-0 transition-opacity"
+            onclick="event.preventDefault(); event.stopPropagation();"
+            data-word="${errorWord}"
+            data-correction="${correction}"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+          ${word}
+        </span>${after}`;
       });
     });
 
@@ -211,6 +250,11 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
       const target = e.target as HTMLElement;
       if (target.classList.contains('error-word')) {
         showTooltip(target);
+        // Show the correction button
+        const btn = target.querySelector('.correct-btn');
+        if (btn) {
+          (btn as HTMLElement).style.opacity = '1';
+        }
       }
     };
 
@@ -224,6 +268,14 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
 
       if (target.id === 'error-tooltip' && relatedTarget?.classList.contains('error-word')) {
         return;
+      }
+
+      // Hide the correction button
+      if (target.classList.contains('error-word')) {
+        const btn = target.querySelector('.correct-btn');
+        if (btn) {
+          (btn as HTMLElement).style.opacity = '0';
+        }
       }
 
       hideTooltip();
@@ -245,6 +297,23 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
 
     editor.addEventListener('mouseover', handleMouseEnter);
     editor.addEventListener('mouseout', handleMouseLeave);
+=======
+    const handleCorrectButtonClick = (e: MouseEvent) => {
+      const button = e.target as HTMLElement;
+      const correctBtn = button.closest('.correct-btn');
+      if (correctBtn) {
+        const word = correctBtn.getAttribute('data-word');
+        const correction = correctBtn.getAttribute('data-correction');
+        if (word && correction) {
+          handleCorrectWord(word, correction);
+        }
+      }
+    };
+
+    document.addEventListener('mouseover', handleMouseEnter);
+    document.addEventListener('mouseout', handleMouseLeave);
+    document.addEventListener('click', handleCorrectButtonClick);
+
 
     const tooltip = document.getElementById('error-tooltip');
     if (tooltip) {
@@ -253,8 +322,14 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
     }
 
     return () => {
+
       editor.removeEventListener('mouseover', handleMouseEnter);
       editor.removeEventListener('mouseout', handleMouseLeave);
+=======
+      document.removeEventListener('mouseover', handleMouseEnter);
+      document.removeEventListener('mouseout', handleMouseLeave);
+      document.removeEventListener('click', handleCorrectButtonClick);
+
       if (tooltip) {
         tooltip.removeEventListener('mouseenter', handleTooltipMouseEnter);
         tooltip.removeEventListener('mouseleave', handleTooltipMouseLeave);
@@ -273,7 +348,7 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
       console.log('API Response:', errors);
       
       setCurrentErrors(errors);
-      onErrorsFound(errors); // Pass errors to parent component
+      onErrorsFound(errors);
       
       const displayText = markErrorsInText(userInput, errors);
       
@@ -310,7 +385,7 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
             console.log('New user input:', newText);
             setUserInput(newText);
             setCurrentErrors([]);
-            onErrorsFound([]); // Clear errors in parent when input changes
+            onErrorsFound([]);
           }}
           onMouseUp={handleTextSelection}
         />
@@ -393,6 +468,13 @@ export const TextEditor = forwardRef<TextEditorRef, TextEditorProps>(
         }
         #error-tooltip {
           transition: opacity 0.2s ease;
+        }
+        .correct-btn {
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+        .error-word:hover .correct-btn {
+          opacity: 1;
         }
       `}</style>
     </div>

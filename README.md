@@ -37,7 +37,7 @@ Follow these steps to set up and run the project on your local environment:
 
    
 5. **Modify the Environment File**  
-   Please follow the following changes to the `env.local` file:
+   Please follow the following changes to the [env.local](allam-nu7aa/env.local) file:
    1. Open the file.
    2. Add your `API KEY` and `PROJECT ID`.
    3. Change the file's name to `.env.local`

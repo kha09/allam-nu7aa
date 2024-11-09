@@ -35,5 +35,13 @@ Follow these steps to set up and run the project on your local environment:
    # or
    bun dev
 
-5. **View the Project**  
+   
+5. **Modify the Environment File**  
+   Please follow the following changes to the `env.local` file:
+   1. Open the file.
+   2. Add your `API KEY` and `PROJECT ID`.
+   3. Change the file's name to `.env.local`
+
+
+6. **View the Project**  
    Open your browser and navigate to [http://localhost:3000](http://localhost:3000) to view the application. The server will automatically reload if you make edits to the code.
